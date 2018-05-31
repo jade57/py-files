@@ -1,7 +1,8 @@
 
 #Event Generator
 
-import dice_machine
+import dicemachine
+import easygui
 
 class Table:
     name = None
@@ -28,25 +29,51 @@ class Controller:
     
     def NextDay(self):
         self.day += 1
-        dayRoll = dice_machine.RollD(20)
+        dayRoll = dicemachine.RollD(20)
         for span in SectorCurrent.eventRange:
             if dayRoll >= span.minVal and dayRoll <= span.maxVal:
-                return print(str(dayRoll)+": An event was triggered on the "+str(span.name)+" table!")
+               return print(str(dayRoll)+": An event was triggered on the "+str(span.name)+" table!")
+
+class Subsystem:
+    name = None
+    damage = None
+    sid = None
+
+    def __init__(self, name):
+        self.name = name
+        self.sid = name[:1]
+        
 class MECS:
     name = None
-    subsystems = ["P","E","C"]
+    subsystems = [Subsystem("Physical"),Subsystem("Electrical"),Subsystem("Computerized")]
 
     def __init__(self, name):
         self.name = name
 
+
+
 class Crew:
     name = None
-    hp = 10
+    hp = 7
     room = None
 
     def __init__(self, name, room):
         self.name = name
         self.room = room
+
+    def GetHealth(self):
+        if self.hp >= 10:
+            return "Perfect"
+        elif self.hp >= 8:
+            return "Great"
+        elif self.hp >= 6:
+            return "Fair"
+        elif self.hp >= 4:
+            return "Poor"
+        elif self.hp >= 1:
+            return "Terrible"
+        else:
+            return "Dead"
     
     def ChangeRoom(self):
 
@@ -67,13 +94,18 @@ class Crew:
 
             print("Room not found. Try again...")
 
-def CrewStatus():
-    for i in range(0, len(CrewMembers)):
-        print(CrewMembers[i].name+"\n-- Room: "+CrewMembers[i].room.name+"\n-- Health: "+str(CrewMembers[i].hp)+"\n")
-
+def ShipStatus():
+    for room in ROOMS:
+            print("-----\n"+room.name+"\n-----\n")
+            for sub in room.subsystems:
+                print(sub.name+" - "+sub.sid)
+            print()
+    for crew in CrewMembers:
+        print(crew.name+"\n-- Room: "+crew.room.name+"\n-- Health: "+crew.GetHealth()+"\n")
+        
 def MoveCrew():
     while True:
-            
+        easygui.buttonbox('test')
         print("Who would you like to move?\n")
         for i in range(0, len(CrewMembers)):
             print("("+str(i+1)+") "+CrewMembers[i].name+" - "+CrewMembers[i].room.name)
@@ -88,10 +120,6 @@ def MoveCrew():
         
         print("Not a valid selection! Try again...")
 
-#define global vars
-EVENT_TYPES = ["EVENTS","MEETINGS","OTHER"]
-GC = Controller()
-
 #init Sectors
 Sector1 = Sector()
 Sector1.name = "Alpha Sector"
@@ -102,39 +130,44 @@ MECS_LABELS = ["Medbay","Engines","Comms","Systems"]
 ROOMS = ["","","",""]
 CrewMembers = ["","","",""]
 
-for i in range(0, len(MECS_LABELS)):
-    ROOMS[i] = MECS(MECS_LABELS[i])
-
-for i in range(0, len(ROOMS)):
-    CrewMembers[i] = Crew("Jenkins "+str(i+1),ROOMS[i])
-
+#define global vars
+EVENT_TYPES = ["EVENTS","MEETINGS","OTHER"]
+GC = Controller()
 SectorCurrent = Sector1
 
-action = ""
-
-while action != "exit":
+def main():
     
-    print("-------------\nDay: "+str(GC.day)+"\n-------------")
-    print("What would you like to do?\n")
-    action = input("(1) Continue\n(2) Crew Status\n(3) Move Crew Member\n\nChoice: ")
-    print("")
+    for i in range(0, len(MECS_LABELS)):
+        ROOMS[i] = MECS(MECS_LABELS[i])
 
-    #test = 3 #int 3
-    #test == 3 #bool with value of True
-    #test == 7 #bool with value False
+    for i in range(0, len(ROOMS)):
+        CrewMembers[i] = Crew("Jenkins "+str(i+1),ROOMS[i])
 
-    if action == "1":
-        GC.NextDay()
-    elif action == "2":
-        CrewStatus()
-    elif action == "3":
-        MoveCrew()
-    
+    action = ""
 
-'''print(SectorCurrent.name)
-for i in SectorCurrent.eventRange:
-    print(i.name)
-    print(i.minVal)
-    print(i.maxVal)
-'''
-    
+    while action != "exit":
+        
+        print("-------------\nDay: "+str(GC.day)+"\n-------------")
+        print("What would you like to do?\n")
+        action = input("(1) Continue\n(2) Crew Status\n(3) Move Crew Member\n\nChoice: ")
+        print("")
+
+        #test = 3 #int 3
+        #test == 3 #bool with value of True
+        #test == 7 #bool with value False
+
+        if action == "1":
+            GC.NextDay()
+        elif action == "2":
+            ShipStatus()
+        elif action == "3":
+            MoveCrew()
+        
+
+    '''print(SectorCurrent.name)
+    for i in SectorCurrent.eventRange:
+        print(i.name)
+        print(i.minVal)
+        print(i.maxVal)
+    '''
+        
