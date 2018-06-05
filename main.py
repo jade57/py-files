@@ -249,9 +249,10 @@ def main():
         options = GC.GetOptions()
         action = buttonbox("What would you like to do?","Day "+GC.phase+": "+str(GC.day),options)
 
+        #Trigger quit prompt if prompt window is closed
         if action == None:
-            continue
-        
+            action = OPTIONS["X"]
+            
         if action == OPTIONS["D"]:
             GC.NextDay()
         elif action == OPTIONS["S"]:
