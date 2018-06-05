@@ -4,13 +4,7 @@
 import dicemachine
 import sys
 from easygui.easygui import *
-
-class Table:
-    name = None
-    events = []
-
-class Event:
-    name = None
+import eventhandler
 
 class Range:
     def __init__(self, name, minVal, maxVal):
@@ -204,7 +198,7 @@ CrewMembers = [None]*4
 GC = Controller()
 GC.sector = Sector1
 
-#####
+#####End Globals
 
 #Offer Quickstart
 
