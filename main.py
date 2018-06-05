@@ -2,6 +2,7 @@
 #Event Generator
 
 import dicemachine
+import sys
 from easygui.easygui import *
 
 class Table:
@@ -27,6 +28,8 @@ class Sector:
 class Controller:
     day = 0
     sector = 0
+    comps = {"Physical":5,"Electrical":5,"Computerized":5}
+    meds = 10
 
     def NextDay(self):
         self.day += 1
@@ -94,18 +97,40 @@ class Crew:
             print("Room not found. Try again...")
 
 def ShipStatus():
-    textStr = ""
-    for room in ROOMS:
-        textStr += ("-----\n"+room.name+"\n-----\n")
-        for sub in room.subsystems:
-            textStr += (sub.name+" Components:\n"+"    Damage: "+sub.GetSeverity()+"\n")
-        textStr += "\n"
-    textStr += ("\n-----\nCrew Status\n-----\n")
-    for crew in CrewMembers:
-        textStr += ("\n"+crew.name+"\n-- Room: "+crew.room.name+"\n-- Health: "+crew.GetHealth()+"\n")
-    
-    textbox(textStr)
+    choice = ""
+    while choice != "Done":
         
+        choice = buttonbox("What do you want to check on?","Ship Status",["Ship","Crew","Inventory","Done"])
+        
+        if choice == "Ship":
+            textStr = ""
+            for room in ROOMS:
+                textStr += ("-----\n"+room.name+"\n-----\n")
+                damStr = ""
+                for sub in room.subsystems:
+                    if sub.damage != 0:
+                        damStr += (sub.name+" Subsystems:\n"+"    Damage: "+sub.GetSeverity()+"\n")
+                if damStr == "":
+                    textStr += "Nothing to report...\n"
+                textStr += "\n"
+            choice = buttonbox(textStr,"Ship Status",["Back","Done"])
+        
+        elif choice == "Crew":
+            textStr = ""
+            #textStr += ("\n-----\nCrew Status\n-----\n")
+            for crew in CrewMembers:
+                textStr += ("\n"+crew.name+"\n-- Room: "+crew.room.name+"\n-- Health: "+crew.GetHealth()+"\n")
+            choice = buttonbox(textStr,"Crew Status",["Back","Done"])
+        
+        elif choice =="Inventory":
+            textStr = ""
+            #textStr += ("\n-----\nComponents\n-----\n")
+            for comp in PECS:
+                #msgbox(comp)
+                textStr += (str(GC.comps[comp])+" "+comp+" Components\n")
+            textStr += str(GC.meds)+" Medical Supplies"
+            choice = buttonbox(textStr,"Crew Status",["Back","Done"])
+                
 def MoveCrew():
     while True:
         crewNames = []
@@ -120,6 +145,13 @@ def MoveCrew():
         
         print("Not a valid selection! Try again...")
 
+def GetRandomCrew():
+    return CrewMembers[dicemachine.RollD(4)-1]
+
+def GetRandomPECs():
+    roll = dicemachine.RollD(3)
+    return PECS[roll-1]
+
 #init Sectors
 Sector1 = Sector()
 Sector1.name = "Alpha Sector"
@@ -132,16 +164,30 @@ CrewMembers = [None]*4
 
 #define global vars
 EVENT_TYPES = ["EVENTS","MEETINGS","OTHER"]
+PECS = ["Physical","Electrical","Computerized"]
 GC = Controller()
 GC.sector = Sector1
 
+#Begin
+qs = ynbox("Quick Start?")
+
+#init Rooms
 for i in range(0, len(MECS_LABELS)):
     ROOMS[i] = MECS(MECS_LABELS[i])
 
+#init Crew
 for i in range(0, len(ROOMS)):
-    CrewMembers[i] = Crew("Jenkins "+str(i+1),ROOMS[i])
+    if qs == False:
+        cname = ""
+        while cname == "":
+            cname = enterbox("Please name the "+MECS_LABELS[i]+" Specialist:\n")
+            if cname == "": msgbox("The name cannot be blank!")
+        CrewMembers[i] = Crew(cname,ROOMS[i])
+    else:
+        CrewMembers[i] = Crew("Jenkins "+str(i+1),ROOMS[i])
 
-OPTIONS=["Continue","Crew Status","Move Crew Member"]
+OPTIONS = ["Continue","Status Report","Move Crew Member","Get Random Crew","Get Random PECs"]
+OPTIONS.append("Exit Program")
 
 def main():
 
@@ -157,5 +203,12 @@ def main():
             ShipStatus()
         elif action == OPTIONS[2]:
             MoveCrew()
+        elif action == OPTIONS[3]:
+            msgbox(GetRandomCrew().name)
+        elif action == OPTIONS[4]:
+            msgbox(GetRandomPECs())
+        elif action == OPTIONS[len(OPTIONS)-1]:
+            if ynbox("Are you sure you want to quit?","Quit Program?"):
+                sys.exit()
 
 main()
