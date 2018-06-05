@@ -32,12 +32,25 @@ class Controller:
     meds = 10
 
     def NextDay(self):
-        self.day += 1
-        dayRoll = dicemachine.RollD(20)
-        for span in self.sector.eventRange:
-            if dayRoll >= span.minVal and dayRoll <= span.maxVal:
-               return msgbox("An event was triggered on the "+str(span.name)+" table!")
+        if self.phase == "END":
+            self.day += 1
+            self.phase = "START"
+        else:
+            dayRoll = dicemachine.RollD(20)
+            for span in self.sector.eventRange:
+                if dayRoll >= span.minVal and dayRoll <= span.maxVal:
+                    self.phase = "END"
+                    return msgbox("An event was triggered on the "+str(span.name)+" table!")
 
+    def GetOptions(self):
+        #Get possible option choices
+        if self.phase == "START": keys = ["D","S","X"]
+        else: keys = ["D","S","M","X"]
+
+        options = [OPTIONS[k] for k in keys]
+
+        return options
+    
 class Subsystem:
     name = None
     damage = 0
@@ -152,62 +165,104 @@ def GetRandomPECs():
     roll = dicemachine.RollD(3)
     return PECS[roll-1]
 
+def SetCrewNames():
+    msg = "What are your crew members' names?"
+    title = "Crew Names"
+    fieldNames = ["Medbay Specialist","Engines Specialist","Comms Specialist","Systems Specialist"]
+    fieldValues = []  # we start with blanks for the values
+    fieldValues = multenterbox(msg,title, fieldNames)
+
+    # make sure that none of the fields was left blank
+    while True:
+        if fieldValues is None: break
+        errmsg = ""
+        for i in range(len(fieldNames)):
+            if fieldValues[i].strip() == "":
+                errmsg += ('"%s" is a required field.\n\n' % fieldNames[i])
+        if errmsg == "":
+            break # no problems found
+        fieldValues = multenterbox(errmsg, title, fieldNames, fieldValues)
+    return fieldValues
+
+#####Globals
+
+#define global arrays
+MECS_LABELS = ["Medbay","Engines","Comms","Systems"]
+EVENT_TYPES = ["EVENTS","MEETINGS","OTHER"]
+PECS = ["Physical","Electrical","Computerized"]
+
 #init Sectors
 Sector1 = Sector()
 Sector1.name = "Alpha Sector"
 Sector1.eventRange = [Range("Nothing",1,9),Range("Events",10,13),Range("Meetings",14,15),Range("Other",16,20)]
 
 #init Ship
-MECS_LABELS = ["Medbay","Engines","Comms","Systems"]
 ROOMS = [None]*4
 CrewMembers = [None]*4
 
-#define global vars
-EVENT_TYPES = ["EVENTS","MEETINGS","OTHER"]
-PECS = ["Physical","Electrical","Computerized"]
+#init Game Controller (GC)
 GC = Controller()
 GC.sector = Sector1
 
-#Begin
-qs = ynbox("Quick Start?")
+#####
+
+#Offer Quickstart
 
 #init Rooms
 for i in range(0, len(MECS_LABELS)):
     ROOMS[i] = MECS(MECS_LABELS[i])
 
 #init Crew
-for i in range(0, len(ROOMS)):
-    if qs == False:
-        cname = ""
-        while cname == "":
-            cname = enterbox("Please name the "+MECS_LABELS[i]+" Specialist:\n")
-            if cname == "": msgbox("The name cannot be blank!")
-        CrewMembers[i] = Crew(cname,ROOMS[i])
-    else:
-        CrewMembers[i] = Crew("Jenkins "+str(i+1),ROOMS[i])
+while None in CrewMembers:
+    qs = ynbox("Quick Start?")
 
-OPTIONS = ["Continue","Status Report","Move Crew Member","Get Random Crew","Get Random PECs"]
-OPTIONS.append("Exit Program")
+    #Name crew members manually
+    if qs == False:
+
+        #returns array of str names or None if cancelled
+        cnames = SetCrewNames()
+
+        #Don't try to create Crew objects if name population was cancelled
+        if cnames == None: continue
+
+        #Otherwise, create Crew objects from the list of provided names
+        for i in range(0, len(ROOMS)):
+            CrewMembers[i] = Crew(cnames[i],ROOMS[i])
+            
+    #If quickstart is selected, auto-name crew members
+    if qs == True:
+        for i in range(0, len(ROOMS)):
+            CrewMembers[i] = Crew("Jenkins "+str(i+1),ROOMS[i])
+
+#####
+            
+#All possible menu options
+OPTIONS = dict(D="Next Day",S="Status Report",M="Move Crew Member",RC="Get Random Crew",RP="Get Random PECs",X="Exit Program")
 
 def main():
 
     action = ""
-
+    GC.phase = "START"
+    
     while action != "exit":
-        
-        action = buttonbox("What would you like to do?","Day: "+str(GC.day),OPTIONS)
 
-        if action == OPTIONS[0]:
+        options = GC.GetOptions()
+        action = buttonbox("What would you like to do?","Day "+GC.phase+": "+str(GC.day),options)
+
+        if action == None:
+            continue
+        
+        if action == OPTIONS["D"]:
             GC.NextDay()
-        elif action == OPTIONS[1]:
+        elif action == OPTIONS["S"]:
             ShipStatus()
-        elif action == OPTIONS[2]:
+        elif action == OPTIONS["M"]:
             MoveCrew()
-        elif action == OPTIONS[3]:
+        elif action == OPTIONS["RC"]:
             msgbox(GetRandomCrew().name)
-        elif action == OPTIONS[4]:
+        elif action == OPTIONS["RP"]:
             msgbox(GetRandomPECs())
-        elif action == OPTIONS[len(OPTIONS)-1]:
+        elif action == OPTIONS["X"]:
             if ynbox("Are you sure you want to quit?","Quit Program?"):
                 sys.exit()
 
