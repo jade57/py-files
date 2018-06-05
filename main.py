@@ -45,7 +45,7 @@ class Controller:
     def GetOptions(self):
         #Get possible option choices
         if self.phase == "START": keys = ["D","S","X"]
-        else: keys = ["D","S","M","X"]
+        else: keys = ["E","S","M","X"]
 
         options = [OPTIONS[k] for k in keys]
 
@@ -237,7 +237,8 @@ while None in CrewMembers:
 #####
             
 #All possible menu options
-OPTIONS = dict(D="Next Day",S="Status Report",M="Move Crew Member",RC="Get Random Crew",RP="Get Random PECs",X="Exit Program")
+OPTIONS = dict(E="Next Day", D="Start Day",S="Status Report",M="Move Crew Member",RC="Get Random Crew",
+               RP="Get Random PECs",X="Exit Program")
 
 def main():
 
@@ -246,14 +247,18 @@ def main():
     
     while action != "exit":
 
+        #Return option list depending on phase
         options = GC.GetOptions()
+
+        #Get the user's input
         action = buttonbox("What would you like to do?","Day "+GC.phase+": "+str(GC.day),options)
 
         #Trigger quit prompt if prompt window is closed
         if action == None:
             action = OPTIONS["X"]
             
-        if action == OPTIONS["D"]:
+        #Take action on given player input:
+        if action == OPTIONS["D"] or action == OPTIONS["E"]:
             GC.NextDay()
         elif action == OPTIONS["S"]:
             ShipStatus()
