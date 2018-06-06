@@ -1,8 +1,5 @@
 # py-files
 
-Me copy
-
-
 A working-title repo for storing various python files that I'm working on
 
 ## Other repos used within this one
